@@ -25,7 +25,6 @@ class GoogleDriveManager():
 
     def create_folder(self, folderName):
         folder_id = self.get_folder_by_name(folderName)
-
         if folder_id:
             print(f"Folder {folderName} already exists")
             return

@@ -16,22 +16,21 @@ class GoogleDriveManager():
 
     def create_file(self, fileName, parentsIds : list[str] | None =None):
         for id in parentsIds :
-            print("id", id)
             if (self.getId(fileName, id)):
                 print("file already exist")
                 return
 
         file_metadata = {
             'title': fileName,
+            'originalFilename' : "esrdtfgyuhjik"
         }
 
         if parentsIds :
             file_metadata["parents"] = [{
                 'kind': 'drive#fileLink',
-                "id" : p_id
+                "id" : p_id,
             } for p_id in parentsIds]
 
-        print(file_metadata)
 
         file = self.drive.CreateFile(file_metadata)
         file.Upload()
@@ -39,7 +38,6 @@ class GoogleDriveManager():
 
     def create_folder(self, folderName, parentsIds : list[str] | None =None):
         if (self.getId(folderName)):
-            print("folder already exist")
             return
 
         file_metadata = {
@@ -67,4 +65,14 @@ class GoogleDriveManager():
             return
 
     def list_dir(self, folderId) :
-        return self.drive.ListFile({'q': f"'{folderId}' in parents and trashed=false"}).GetList()
+        print(self.drive.ListFile({'q': f"'{folderId}' in parents and trashed=false"}).GetList())
+        return [{
+                "id" : f.get('id'),
+                "title" : f.get('title'),
+                "edit_date" : " ".join(f.get('modifiedDate').split(".")[0].split("T")),
+                "type" : "folder" if "folder" in f.get('mimeType') else "file"
+            } for f in self.drive.ListFile({'q': f"'{folderId}' in parents and trashed=false"}).GetList()]
+
+
+
+

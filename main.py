@@ -1,37 +1,44 @@
-import os
+from constants import LOCAL_VAULT
 from goodeDriveManagement import GoogleDriveManager
-import json
+from utils import getFilesNfolders, getFullPath
+import uuid
 
-drive = GoogleDriveManager()
 
-folder_path = "/media/mouhamed/0003-CB5F/notes/obsidian"
+class Sync():
+    def __init__(self, vaultName) :
+        self.drive = GoogleDriveManager()
+        self.vaultId = self.drive.getId(vaultName)
+        self.vault_dir = self.drive.list_dir(self.vaultId)
 
-list_dir = os.listdir(folder_path)
+    def syncFiles(self, local_files, remote_files, parentsIds : list[str] | None =None) :
 
-folders = [file for file in list_dir if os.path.isdir(os.path.join(folder_path, file)) ]
-files = [file for file in list_dir if not os.path.isdir(os.path.join(folder_path, file)) ]
+        print("local_files", local_files)
+        print("remote_files", remote_files)
+        remote_files_titles = [file.get('title') for file in remote_files]
+        for file in local_files :
+            if file.get('title') not in remote_files_titles :
+                newFile = self.drive.create_file(file.get('title'), parentsIds)
+                if newFile:
+                    newFile.SetContentFile(getFullPath(LOCAL_VAULT.get("baseDir"), [file.get('title')]))
+                    newFile.Upload()
+            else :
+                print("file already exist")
 
-print(folders)
-print(files)
+     # TODO : remove files
+    def syncFolders(self, local_folders, remote_folders, parentsIds : list[str] | None =None):
+        remote_folders_titles = [folder.get('title') for folder in remote_folders]
+        for folder in local_folders:
+            if folder.get('title') not in   remote_folders_titles :
+                self.drive.create_folder(folder.get('title'), parentsIds)
 
-drive.create_folder("Obsidian")
-ObsidianId = drive.getId("Obsidian")
+    def sync(self):
+        folders, files = getFilesNfolders.getFilesAndFolders()
+        remote_folders = [folder for folder in self.vault_dir if folder.get('type') == "folder"]
+        remote_files = [file for file in self.vault_dir if file.get('type') == "file"]
+        self.syncFiles(files, remote_files, [self.vaultId])
+        # self.syncFolders(folders, remote_folders, [self.vaultId])
 
-print(ObsidianId)
 
-for file in files :
-    print("creating files")
-    rmtFile = drive.create_file(file, [ObsidianId])
-    if (rmtFile):
-        rmtFile.SetContentFile(os.path.join(folder_path, file))
-        rmtFile.Upload()
 
-for folder in folders :
-    print("creating folders")
-    drive.create_folder(folder, [ObsidianId])
-    
-
-print(drive.list_dir(ObsidianId)[0])
-
-with open("f.json" , "w") as f :
-    json.dump(drive.list_dir(ObsidianId)[0], f)
+sync = Sync("Obsidian")
+sync.sync()

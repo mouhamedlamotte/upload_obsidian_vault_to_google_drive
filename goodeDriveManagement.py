@@ -17,7 +17,6 @@ class GoogleDriveManager():
     def create_file(self, fileName, parentsIds : list[str] | None =None):
         for id in parentsIds :
             if (self.getId(fileName, id)):
-                print("file already exist")
                 return
 
         file_metadata = {
@@ -65,7 +64,6 @@ class GoogleDriveManager():
             return
 
     def list_dir(self, folderId) :
-        print(self.drive.ListFile({'q': f"'{folderId}' in parents and trashed=false"}).GetList())
         return [{
                 "id" : f.get('id'),
                 "title" : f.get('title'),
@@ -73,6 +71,12 @@ class GoogleDriveManager():
                 "type" : "folder" if "folder" in f.get('mimeType') else "file"
             } for f in self.drive.ListFile({'q': f"'{folderId}' in parents and trashed=false"}).GetList()]
 
-
-
-
+    def update_file(self, remote_id, content, new_title,  parentsId : str = 'root') :
+        file = self.drive.CreateFile({'id': remote_id})
+        file.SetContentFile(content)
+        file['title'] = new_title
+        file['parents'] = [{
+            'kind': 'drive#fileLink',
+            "id" : parentsId
+        }]
+        file.Upload()
